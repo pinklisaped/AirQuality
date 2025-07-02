@@ -152,69 +152,92 @@ uint16_t calculateAQIPMs(const PMS5003::pms5003data &pmsData)
 
 void drawAQICircle(int x, int y, int aqi)
 {
+    uint8 radius = 35;
+    TFT_eSprite sprite = TFT_eSprite(&tft);
+    sprite.setTextDatum(MC_DATUM);
+    sprite.createSprite(radius * 2 + 2, radius * 2 + 2);
     uint16_t color = getAQIColor(aqi);
-    tft.fillCircle(x, y, 35, color);
+    sprite.fillCircle(radius, radius, radius, color);
     if (aqi <= 100)
-        tft.setTextColor(TFT_BLACK);
-    if (aqi < 100)
     {
-        tft.setTextSize(2);
-        tft.drawCentreString(String(aqi), x, y - 20, 4);
+        sprite.setTextSize(2);
+        sprite.setTextColor(TFT_BLACK);
+        sprite.drawString(String(aqi), radius, radius + 5, 4);
     }
     else
-        tft.drawCentreString(String(aqi), x, y - 10, 4);
-    tft.setTextSize(1);
-    tft.setTextColor(TFT_WHITE);
-    tft.drawCentreString("AQI", x, y + 35, 2);
+    {
+        sprite.drawString(String(aqi), radius, radius, 4);
+    }
+    sprite.setTextSize(1);
+    sprite.setTextColor(TFT_WHITE);
+    sprite.pushSprite(x - radius, y - radius);
+    sprite.deleteSprite();
 }
 
 void drawDashboardSCD(const SCD41::scd41data &scdData)
 {
-    tft.setTextColor(TFT_WHITE);
+    TFT_eSprite sprite = TFT_eSprite(&tft);
+    sprite.setTextColor(TFT_WHITE);
+    sprite.setTextDatum(MC_DATUM);
+
     // Clear values
-    int w = tft.textWidth(String("000000"), 4);
-    int h = tft.fontHeight(4);
-    int offsetX = w / 2, offsetY = h / 2;
+    int w = sprite.textWidth(String("000000"), 4);
+    int h = sprite.fontHeight(4);
+    int centerX = w / 2, centerY = h / 2;
+    sprite.createSprite(w, h);
+
     // CO2
-    tft.fillRect(120 - offsetX, 195 - offsetY, w, h, TFT_BLACK);
+    sprite.fillScreen(TFT_BLACK);
+    sprite.drawString(String(scdData.co2), centerX, centerY, 4);
+    sprite.pushSprite(120 - centerX, 195 - centerY);
     drawDataArc(120, 120, 115, 45, 135, getCO2Color(scdData.co2), 3);
-    tft.drawString(String(scdData.co2), 120, 195, 4);
 
     // Temp
-    tft.fillRect(40 - offsetX, 150 - offsetY, w, h, TFT_BLACK);
-    tft.drawString(String(scdData.temperature, 1), 40, 150, 4);
+    sprite.fillScreen(TFT_BLACK);
+    sprite.drawString(String(scdData.temperature, 1), centerX, centerY, 4);
+    sprite.pushSprite(40 - centerX, 150 - centerY);
 
     // Humid
-    tft.fillRect(200 - offsetX, 150 - offsetY, w, h, TFT_BLACK);
-    tft.drawString(String(scdData.humidity, 1) + "%", 200, 150, 4);
+    sprite.fillScreen(TFT_BLACK);
+    sprite.drawString(String(scdData.humidity, 1) + "%", centerX, centerY, 4);
+    sprite.pushSprite(200 - centerX, 150 - centerY);
+
+    sprite.deleteSprite();
 
     // AQI
     uint16_t aqi = max(pmsAQI, co2AQI);
-    drawAQICircle(120, 120, aqi);
+    drawAQICircle(120, 115, aqi);
 }
 
 void drawDashboardPMS(const PMS5003::pms5003data &pmsData)
 {
-    tft.setTextColor(TFT_WHITE);
+    TFT_eSprite sprite = TFT_eSprite(&tft);
+    sprite.setTextColor(TFT_WHITE);
+    sprite.setTextDatum(MC_DATUM);
     // Clear values
     int w = tft.textWidth(String("000000"), 4);
     int h = tft.fontHeight(4);
-    int offsetX = w / 2, offsetY = h / 2;
+    int centerX = w / 2, centerY = h / 2;
+    sprite.createSprite(w, h);
 
     // Values
     // PM2.5
-    tft.fillRect(50 - offsetX, 75 - offsetY, w, h, TFT_BLACK);
-    tft.drawString(String(pmsData.pm25_env), 50, 75, 4);
+    sprite.fillScreen(TFT_BLACK);
+    sprite.drawString(String(pmsData.pm25_env), centerX, centerY, 4);
+    sprite.pushSprite(50 - centerX, 75 - centerY);
     drawDataArc(120, 120, 115, 180, 255, getPM25Color(pmsData.pm25_env), 3);
 
     // PM10
-    tft.fillRect(190 - offsetX, 75 - offsetY, w, h, TFT_BLACK);
-    tft.drawString(String(pmsData.pm100_env), 190, 75, 4);
+    sprite.fillScreen(TFT_BLACK);
+    sprite.drawString(String(pmsData.pm100_env), centerX, centerY, 4);
+    sprite.pushSprite(190 - centerX, 75 - centerY);
     drawDataArc(120, 120, 115, 285, 360, getPM10Color(pmsData.pm100_env), 3);
+
+    sprite.deleteSprite();
 
     // AQI
     uint16_t aqi = max(pmsAQI, co2AQI);
-    drawAQICircle(120, 120, aqi);
+    drawAQICircle(120, 115, aqi);
 }
 
 ulong pmsTime;
@@ -256,6 +279,7 @@ void loop()
             tft.fillScreen(TFT_BLACK);
             // Descriptions
             tft.setTextColor(TFT_LIGHTGREY);
+            tft.drawString("AQI", 120, 160, 2);
             tft.drawString("CO", 120, 215, 2);
             tft.drawString("2", 120 + 12, 219, 1);
             tft.drawString("Temp", 40, 170, 2);
